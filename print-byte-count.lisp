@@ -1,10 +1,19 @@
-;; This buffer is for notes you don't want to save, and for Lisp evaluation.
-;; If you want to create a file, visit that file with C-x C-f,
-;; then enter the text in that file's own buffer.
+;;; -*- mode: lisp; syntax: common-lisp; coding: utf-8; package: cl-user; -*-
 
 (in-package #:cl-user)
 
-(defconstant si-prefixes "KMGTPEZY")
+(defpackage #:cl-print-byte-count
+  (:use #:cl)
+  (:export
+   #:calculate-byte-count
+   #:print-byte-count))
+
+(in-package #:cl-print-byte-count)
+
+(defconstant si-prefixes
+  (if (boundp 'si-prefixes)
+      (symbol-value 'si-prefixes)
+      "KMGTPEZY"))
 
 (defun calculate-byte-count (object &optional (base-ten-threshold T) base-ten-divisor strict-p (postfix #\B))
   (loop
@@ -54,48 +63,3 @@ afterwards."
     (when postfix
       (write-char postfix stream)))
   NIL)
-
-(fiveam:def-suite print-byte-count)
-(fiveam:in-suite print-byte-count)
-
-(fiveam:def-test test.1 ()
-  (fiveam:is-every string=
-    ("0"       (format NIL "~/print-byte-count/" 0))
-
-    ("1kB"     (format NIL "~/print-byte-count/" 1000))
-    ("1kB"     (format NIL "~@/print-byte-count/" 1000))
-    ("1000"    (format NIL "~:/print-byte-count/" 1000))
-    ("1000"    (format NIL "~:@/print-byte-count/" 1000))
-
-    ("1kB"     (format NIL "~/print-byte-count/" 1024))
-    ("1kB"     (format NIL "~:/print-byte-count/" 1024))
-    ("1kB"     (format NIL "~@/print-byte-count/" 1024))
-    ("1kB"     (format NIL "~:@/print-byte-count/" 1024))
-
-    ("1KiB"    (format NIL "~,'T/print-byte-count/" 1000))
-    ("1kB"     (format NIL "~,'T@/print-byte-count/" 1000))
-    ("1000"    (format NIL "~,'T:/print-byte-count/" 1000))
-    ("1000"    (format NIL "~,'T:@/print-byte-count/" 1000))
-
-    ("1KiB"    (format NIL "~,'T/print-byte-count/" 1024))
-    ("1KiB"    (format NIL "~,'T:/print-byte-count/" 1024))
-    ("1kB"     (format NIL "~,'T@/print-byte-count/" 1024))
-    ("1kB"     (format NIL "~,'T:@/print-byte-count/" 1024))
-
-    ("1MB"     (format NIL "~/print-byte-count/" (expt 1024 2)))
-    ("1GB"     (format NIL "~/print-byte-count/" (expt 1024 3)))
-    ("1TB"     (format NIL "~/print-byte-count/" (expt 1024 4)))
-
-    ("1.00kB"  (format NIL "~2/print-byte-count/" 1024))
-    ("1.00KiB" (format NIL "~2,'T/print-byte-count/" 1024))
-    ("0.98kB"  (format NIL "~2/print-byte-count/" 1000))
-    ("0.98KiB" (format NIL "~2,'T/print-byte-count/" 1000))))
-
-;;; example
-
-(defun ls (pathname &optional (stream T))
-  (dolist (filename (directory pathname))
-    (let ((length (ignore-errors
-                    (with-open-file (stream filename :element-type '(unsigned-byte 8))
-                      (file-length stream)))))
-      (format stream "~@[~/print-byte-count/~] ~A~%" length filename))))
